@@ -1,0 +1,7 @@
+interface:
+  display_name: "Logical Commits"
+  short_description: "Create a coherent, reviewable commit history"
+  default_prompt: "Use $logical-commits to split the current work into small, coherent commits."
+
+policy:
+  allow_implicit_invocation: false
