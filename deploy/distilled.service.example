@@ -1,0 +1,19 @@
+[Unit]
+Description=Distilled YouTube Reader
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=linuxuser
+WorkingDirectory=/home/linuxuser/prod-apps/yt-summarizer
+EnvironmentFile=/home/linuxuser/prod-apps/yt-summarizer/.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node dist/server.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

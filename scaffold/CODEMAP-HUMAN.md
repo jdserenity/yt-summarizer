@@ -15,29 +15,44 @@ Map of this project's codebase for the maintainer: which files do what, how data
 - Product pitch or "what this app is for" — durable product/system facts go in `scaffold/CODEMAP-LLM.md`
 - Generic tutorials, glossaries, or coaching
 
-## Example shape (replace with this project's real map)
-
 ### Layout
 
 ```
 src/
-  main.ts           # entry; wires the router
-  routes/orders.ts  # HTTP handlers for orders
-  db/client.ts      # DB connection used by routes
-lib/
-  auth.ts           # session checks called from routes
+  server.ts       # process entry; wires dependencies, timers, and shutdown
+  app.ts          # HTTP routes, optional Basic Auth, and WebSub endpoint
+  config.ts       # validates environment configuration
+  database.ts     # SQLite schema and all persistence operations
+  youtube.ts      # YouTube Data API, feeds, and WebSub client
+  transcripts.ts  # Supadata native-caption client
+  summarizers.ts  # replaceable xAI/OpenAI Responses API adapter
+  processor.ts    # discovery, filtering, retries, and article pipeline
+  filters.ts      # pure per-channel title and duration filtering
+  views.ts        # server-rendered HTML screens
+  styles.ts       # application stylesheet
+  types.ts        # shared domain types
+test/             # unit and HTTP integration tests
+deploy/           # example systemd unit and nginx site
 ```
 
 ### Flow
 
 ```mermaid
 flowchart LR
-  Client --> routes/orders.ts
-  routes/orders.ts --> lib/auth.ts
-  routes/orders.ts --> db/client.ts
+  YouTube[YouTube WebSub + feeds] --> Processor[processor.ts]
+  Processor --> Metadata[YouTube Data API]
+  Metadata --> Filters[per-channel filters]
+  Filters -->|accepted| Captions[Supadata native captions]
+  Captions --> Summary[xAI or OpenAI]
+  Summary --> DB[(SQLite)]
+  Browser --> App[app.ts]
+  App --> DB
+  App --> Processor
 ```
 
 ### State
 
-- Order rows: Postgres `orders` table (via `db/client.ts`)
-- Session: cookie → checked in `lib/auth.ts`
+- Durable state: one SQLite file configured by `DATABASE_PATH`.
+- Secrets and provider/model selection: process environment loaded from `.env` by the start command or systemd.
+- In-memory state: only timers and current request/job execution; queued and retryable work remains in SQLite.
+- External state: public YouTube feeds/metadata, Supadata captions, and the selected model provider.
