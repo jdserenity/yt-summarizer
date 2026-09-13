@@ -1,14 +1,14 @@
 ---
 name: logical-commits
 description: >-
-  Split current work into a trail of small, coherent git commits.
-  Use only when the user explicitly asks to create logical commits or
-  invokes the logical commit skill.
+  Maintain a trail of small, coherent Git commits and push completed work
+  during change and build tasks in a Git repository. Do not use for read-only
+  requests or repositories without Git.
 ---
 
-# Logical commits
+# Automatic logical commits
 
-When this skill is invoked, turn the current uncommitted work into a sequence of logical commits. Do not push.
+Commit and push work without waiting for the maintainer to ask. Treat Git history as part of implementation, not as end-of-task cleanup.
 
 ## What counts as one commit
 
@@ -16,33 +16,24 @@ Each commit is one coherent unit of work — something you can describe in one s
 
 Prefer commits that leave the repo in a sensible state (tests passing for what that commit adds). Avoid half-wired broken middles unless you truly cannot avoid them. Prefer coherent chunks over both mega-commits and meaningless one-line typo commits.
 
-Buildability is not a reason to collapse independent work into one commit. Order commits from foundations to consumers, and place each behavior's tests in the same commit as that behavior. A repository may gain capabilities incrementally even when the final entrypoint arrives later.
-
-## Decomposition guardrails
-
-Before staging anything, inventory the changed files by concern and write a commit plan. Typical concerns include project foundation, data model, domain behavior, each external integration, orchestration, user interface, operations, and documentation. If two groups can be reviewed or reverted independently, they normally belong in different commits.
-
-Never put an entire new application into one implementation commit when storage, domain logic, external integrations, orchestration, and UI can be separated. "The app only works when everything is present" does not make those changes one concern.
-
-Use these checks to catch under-splitting:
-
-- Exclude lockfiles and generated files when judging change size, but commit them alongside the configuration that generated them.
-- If a proposed commit adds more than roughly 500 non-generated lines or crosses more than one architectural layer, pause and identify the single behavior it owns. Split it unless every file is necessary to review that one behavior.
-- If the subject needs a vague umbrella such as "build the application" or joins multiple outcomes with "and", the commit is probably too broad.
-- A large greenfield change should usually produce a sequence of foundational and feature commits, not one implementation commit plus one documentation commit.
-
-Do not turn these heuristics into arbitrary micro-commits. Closely coupled implementation and tests are one unit; unrelated formatting or documentation is not.
+Commit a coherent unit soon after it is complete and verified. Do not hold several completed units for one large commit at the end of the task. Keep a behavior and its tests together when separating them would make either commit misleading or broken.
 
 ## Commit messages
 
 Write complete sentences: a short subject stating what changed and why it matters (focus on "why" over "what").
 
-## How to run
+## Workflow
 
-1. Inspect the full working tree (`git status`, `git diff`, recent `git log` for message style).
-2. Separate generated-file volume from authored changes, inventory the authored changes by concern, and state the commit plan before staging.
-3. Challenge the plan with the decomposition guardrails above. Revise any umbrella commit before creating it.
-4. Stage and commit one unit at a time. Inspect `git diff --cached --stat` before committing.
-5. After each commit, inspect its file list, confirm the message matches that unit only, and run the smallest relevant test or build check.
-6. At the end, run the full relevant verification suite and inspect the final log and working tree.
-7. Stop when the working tree is clean (or only unrelated leftover files remain). Report the commits you created. Never push unless the user explicitly asks.
+1. Before editing, inspect `git status`, the relevant diff, the current branch and upstream, and recent commit messages. Identify pre-existing changes so they are not accidentally included.
+2. As each coherent unit is completed, run the checks appropriate to that unit.
+3. Stage only that unit. Prefer explicit paths; use patch staging when a file contains both task work and unrelated changes. Review the staged diff before committing.
+4. Commit the unit, confirm the commit contains only that unit, then push it to the configured upstream remote. If the branch has no upstream and `origin` exists, establish it with `git push -u origin HEAD`.
+5. Repeat throughout the task. At the end, confirm all task changes are committed and pushed while unrelated pre-existing changes remain untouched.
+
+## Safety and failure handling
+
+- Never amend, reset, rebase, squash, or force-push to correct completed work. Make a new corrective or revert commit.
+- Never discard, overwrite, stash, or commit unrelated changes belonging to the maintainer or another agent.
+- Do not commit likely secrets, credentials, private keys, or local-only configuration.
+- If verification fails, fix the unit before committing when practical. If a previously committed change later proves wrong, preserve it and add the fix or reversal as a new commit.
+- If committing or pushing fails, keep completed local commits intact, continue safe work when possible, and clearly report what remains uncommitted or unpushed. Do not rewrite history or force-push to recover.
